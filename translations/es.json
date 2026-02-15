@@ -1,20 +1,22 @@
 {
   "app": {
-    "name": "Medinet Uploader",
-    "short_description": "Sube datos de Deal y Contact a Medinet"
-  },
-  "parameters": {
-    "backend_base_url": {
-      "label": "Backend base URL",
-      "helpText": "URL base del backend que recibe /medinet/import"
-    },
-    "backend_api_key": {
-      "label": "Backend API key",
-      "helpText": "API key enviada en el header X-API-Key"
-    },
-    "backend_timeout_ms": {
-      "label": "Backend timeout (ms)",
-      "helpText": "Tiempo máximo de espera del POST al backend"
+    "name": "Medinet",
+    "short_description": "Send Zendesk Sell deal data to Medinet",
+    "long_description": "This app reads the current Deal and its primary Contact in Zendesk Sell, validates required fields, and sends the payload to a backend endpoint for Medinet import.",
+    "installation_instructions": "Install the app and configure the backend_base_url and backend_api_key parameters. Then open any Deal and click 'Subir a Medinet'.",
+    "parameters": {
+      "backend_base_url": {
+        "label": "Backend Base URL",
+        "helpText": "Example: https://sell-medinet-backend.onrender.com"
+      },
+      "backend_api_key": {
+        "label": "Backend API Key",
+        "helpText": "Must match the API_KEY environment variable configured on Render."
+      },
+      "backend_timeout_ms": {
+        "label": "Backend Timeout (ms)",
+        "helpText": "Optional. Default: 20000"
+      }
     }
   }
 }
