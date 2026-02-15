@@ -55,7 +55,7 @@
     return '';
   }
 
-  async async function getSettings() {
+  async function getSettings() {
     // En Sell, los settings pueden venir en distintos lugares según instalación/versión.
     const metadata = await client.metadata().catch(() => ({}));
     let settings =
@@ -70,7 +70,8 @@
       const fromGet = got.settings && Object.keys(got.settings).length ? got.settings : got;
       settings = Object.assign({}, settings, fromGet);
     }
-// Normalizar nombres posibles
+
+    // Normalizar nombres posibles
     const baseUrl =
       settings.backend_base_url ||
       settings.backendBaseUrl ||
