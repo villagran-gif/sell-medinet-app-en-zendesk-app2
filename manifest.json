@@ -1,10 +1,10 @@
 {
-  "name": "Medinet Uploader",
+  "name": "Medinet",
   "author": {
-    "name": "villagran rod",
+    "name": "Clinyco",
     "email": "villagran@clinyco.cl"
   },
-  "defaultLocale": "es",
+  "defaultLocale": "en",
   "private": true,
   "frameworkVersion": "2.0",
   "location": {
@@ -12,24 +12,30 @@
       "deal_card": "assets/iframe.html"
     }
   },
+  "domainWhitelist": [
+    "sell-medinet-backend.onrender.com"
+  ],
   "parameters": [
     {
       "name": "backend_base_url",
       "type": "text",
       "required": true,
-      "secure": false
+      "default": "https://sell-medinet-backend.onrender.com"
     },
     {
       "name": "backend_api_key",
       "type": "text",
       "required": true,
-      "secure": true
+      "secure": true,
+      "scopes": [
+        "header"
+      ]
     },
     {
       "name": "backend_timeout_ms",
-      "type": "number",
+      "type": "text",
       "required": false,
-      "default": 20000
+      "default": "20000"
     }
   ]
 }
