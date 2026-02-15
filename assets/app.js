@@ -14,92 +14,48 @@
     tramoModalidad: 2758483,
   };
 
-  // Aliases por NOMBRE (porque /v2 devuelve custom_fields por nombre, no por ID)
-  const FIELD_KEYS = {
-    rut: [FIELD_IDS.rut, "RUT o ID", "RUT O ID"],
-    birthDate: [FIELD_IDS.birthDate, "Fecha Nacimiento", "Fecha de nacimiento"],
-    emailPrimary: [FIELD_IDS.emailPrimary, "Correo electrónico", "Correo"],
-    emailSecondary: [FIELD_IDS.emailSecondary, "correo electrónico", "Correo"],
-    direccion: [FIELD_IDS.direccion, "Dirección", "Direccion"],
-    comuna: [FIELD_IDS.comuna, "Comuna", "Ciudad"],
-    telA: [FIELD_IDS.telA, "Teléfono", "Telefono"],
-    telB: [FIELD_IDS.telB, "Numero de teléfono", "Número de teléfono", "Telefono"],
-    telC: [FIELD_IDS.telC, "Telefono", "Teléfono"],
-    tramoModalidad: [FIELD_IDS.tramoModalidad, "Tramo/Modalidad"],
-  };
+  const statusEl = document.getElementById('status');
+  const debugEl = document.getElementById('debug');
+  const btnUpload = document.getElementById('btnUpload');
 
-  const statusEl = document.getElementById("status");
-  const debugEl = document.getElementById("debug");
-  const btnUpload = document.getElementById("btnUpload");
-
-  if (btnUpload) btnUpload.addEventListener("click", onUploadClick);
+  btnUpload.addEventListener('click', onUploadClick);
 
   function setStatus(message) {
-    if (statusEl) statusEl.textContent = message;
+    statusEl.textContent = message;
   }
 
   function setDebug(content) {
-    if (!debugEl) return;
     debugEl.textContent =
-      typeof content === "string" ? content : JSON.stringify(content, null, 2);
+      typeof content === 'string' ? content : JSON.stringify(content, null, 2);
   }
 
-  function isObject(x) {
-    return x && typeof x === "object" && !Array.isArray(x);
-  }
-
-  function toStringValue(val) {
-    if (val === null || val === undefined) return "";
-    if (isObject(val)) {
-      const line1 = val.line1 || val.street || "";
-      const city = val.city || "";
-      const state = val.state || "";
-      const postal = val.postal_code || val.postalCode || "";
-      const parts = [line1, city, state, postal]
-        .map((s) => String(s || "").trim())
-        .filter(Boolean);
-      return parts.join(", ");
+  function getCustomField(entity, fieldId) {
+    if (!entity) {
+      return '';
     }
-    return String(val).trim();
-  }
 
-  // Busca por ID o por nombre (alias)
-  function getField(entity, keys) {
-    if (!entity) return "";
-    const keyList = (Array.isArray(keys) ? keys : [keys]).filter(
-      (k) => k !== undefined && k !== null
-    );
+    const id = String(fieldId);
+    const candidateMaps = [entity.custom_fields, entity.customFields, entity.custom_field_values];
 
-    const candidateMaps = [
-      entity.custom_fields,
-      entity.customFields,
-      entity.custom_field_values,
-      entity.customFieldValues,
-    ];
-
-    for (const key of keyList) {
-      const keyStr = String(key);
-
-      for (const map of candidateMaps) {
-        if (map && isObject(map)) {
-          if (Object.prototype.hasOwnProperty.call(map, keyStr)) return map[keyStr];
-          if (Object.prototype.hasOwnProperty.call(map, key)) return map[key];
-        }
+    for (const map of candidateMaps) {
+      if (map && Object.prototype.hasOwnProperty.call(map, id)) {
+        return map[id];
+      }
+      if (map && Object.prototype.hasOwnProperty.call(map, fieldId)) {
+        return map[fieldId];
       }
     }
 
-    // Fallback: si viniera como array
     if (Array.isArray(entity.custom_fields)) {
-      for (const key of keyList) {
-        const id = String(key);
-        const hit = entity.custom_fields.find(
-          (x) => String(x.id) === id || String(x.custom_field_id) === id
-        );
-        if (hit) return hit.value;
+      const hit = entity.custom_fields.find(
+        (x) => String(x.id) === id || String(x.custom_field_id) === id
+      );
+      if (hit) {
+        return hit.value;
       }
     }
 
-    return "";
+    return '';
   }
 
   async function getSettings() {
@@ -110,7 +66,7 @@
       (metadata && metadata.config) ||
       {};
 
-    const got = await client.get("settings").catch(() => ({}));
+    const got = await client.get('settings').catch(() => ({}));
     if (got && Object.keys(got).length) {
       const fromGet = got.settings && Object.keys(got.settings).length ? got.settings : got;
       settings = Object.assign({}, settings, fromGet);
@@ -121,8 +77,13 @@
       settings.backendBaseUrl ||
       settings.base_url ||
       settings.baseUrl ||
-      "";
-
+      '';
+    const apiKey =
+      settings.backend_api_key ||
+      settings.backendApiKey ||
+      settings.api_key ||
+      settings.apiKey ||
+      '';
     const timeout =
       settings.backend_timeout_ms ||
       settings.backendTimeoutMs ||
@@ -131,7 +92,8 @@
       20000;
 
     return {
-      backend_base_url: String(baseUrl || "").trim().replace(/\/$/, ""),
+      backend_base_url: String(baseUrl || '').trim().replace(/\/$/, ''),
+      backend_api_key: String(apiKey || '').trim(),
       backend_timeout_ms: Number(timeout || 20000),
     };
   }
@@ -139,27 +101,33 @@
   async function getDealContext() {
     const sources = [];
     const tryPush = (value) => {
-      const n = Number(value);
-      if (Number.isFinite(n) && n > 0) sources.push(n);
+      if (value) {
+        sources.push(Number(value));
+      }
     };
 
     const fromGet = await client
       .get([
-        "deal.id",
-        "deal",
-        "currentDeal.id",
-        "currentDeal",
-        "dealId",
-        "context.dealId",
+        'deal.id',
+        'deal',
+        'currentDeal.id',
+        'currentDeal',
+        'dealId',
+        'context.dealId',
+        'ticket.id',
       ])
       .catch(() => ({}));
 
-    tryPush(fromGet["deal.id"]);
-    tryPush(fromGet["currentDeal.id"]);
+    tryPush(fromGet['deal.id']);
+    tryPush(fromGet['currentDeal.id']);
     tryPush(fromGet.dealId);
-    tryPush(fromGet["context.dealId"]);
-    if (fromGet.deal && fromGet.deal.id) tryPush(fromGet.deal.id);
-    if (fromGet.currentDeal && fromGet.currentDeal.id) tryPush(fromGet.currentDeal.id);
+    tryPush(fromGet['context.dealId']);
+    if (fromGet.deal && fromGet.deal.id) {
+      tryPush(fromGet.deal.id);
+    }
+    if (fromGet.currentDeal && fromGet.currentDeal.id) {
+      tryPush(fromGet.currentDeal.id);
+    }
 
     const ctx = await client.context().catch(() => ({}));
     tryPush(ctx.dealId);
@@ -167,90 +135,96 @@
     tryPush(ctx.resource_id);
 
     const urlParams = new URLSearchParams(window.location.search);
-    tryPush(urlParams.get("deal_id"));
-    tryPush(urlParams.get("dealId"));
+    tryPush(urlParams.get('deal_id'));
+    tryPush(urlParams.get('dealId'));
 
     const dealId = sources.find((x) => Number.isFinite(x) && x > 0);
-    if (!dealId) throw new Error("No fue posible determinar el Deal actual.");
+    if (!dealId) {
+      throw new Error('No fue posible determinar el Deal actual.');
+    }
 
     const dealResponse = await client.request({
       url: `/v2/deals/${dealId}`,
-      type: "GET",
-      contentType: "application/json",
+      type: 'GET',
+      contentType: 'application/json',
     });
 
     const deal = dealResponse && dealResponse.data ? dealResponse.data : dealResponse;
-    if (!deal || !deal.id) throw new Error("No se pudo cargar el Deal.");
+    if (!deal || !deal.id) {
+      throw new Error('No se pudo cargar el Deal.');
+    }
 
     return deal;
   }
 
   async function getContactContext(deal) {
     const contactId = deal.contact_id || (deal.contact && deal.contact.id);
-    if (!contactId) throw new Error("El Deal no tiene contacto asociado.");
+    if (!contactId) {
+      throw new Error('El Deal no tiene contacto asociado.');
+    }
 
     const contactResponse = await client.request({
       url: `/v2/contacts/${contactId}`,
-      type: "GET",
-      contentType: "application/json",
+      type: 'GET',
+      contentType: 'application/json',
     });
 
-    const contact =
-      contactResponse && contactResponse.data ? contactResponse.data : contactResponse;
-    if (!contact || !contact.id) throw new Error("No se pudo cargar el Contact.");
+    const contact = contactResponse && contactResponse.data ? contactResponse.data : contactResponse;
+    if (!contact || !contact.id) {
+      throw new Error('No se pudo cargar el Contact.');
+    }
 
     return contact;
   }
 
+  function selectEmail(contact) {
+    const emailA = String(getCustomField(contact, FIELD_IDS.emailPrimary) || '').trim();
+    const emailB = String(getCustomField(contact, FIELD_IDS.emailSecondary) || '').trim();
+    return emailA || emailB || '';
+  }
+
   function normalizePhone(phone) {
-    const digits = String(phone || "").replace(/\D+/g, "");
-    if (!digits) return "";
-    if (digits.startsWith("56") && digits.length >= 11) return digits.slice(2);
+    const digits = String(phone || '').replace(/\D+/g, '');
+    if (!digits) {
+      return '';
+    }
+
+    if (digits.startsWith('56') && digits.length >= 11) {
+      return digits.slice(2);
+    }
+
     return digits;
   }
 
   function pickTel1Tel2(contact) {
-    const candidates = [
-      toStringValue(getField(contact, FIELD_KEYS.telA)),
-      toStringValue(getField(contact, FIELD_KEYS.telB)),
-      toStringValue(getField(contact, FIELD_KEYS.telC)),
-      toStringValue(contact.phone),
-      toStringValue(contact.mobile_phone),
-      toStringValue(contact.work_phone),
-    ]
-      .map((x) => String(x || "").trim())
+    const candidates = [FIELD_IDS.telA, FIELD_IDS.telB, FIELD_IDS.telC]
+      .map((id) => String(getCustomField(contact, id) || '').trim())
       .filter(Boolean);
 
-    const tel1 = candidates[0] || "";
-    if (!tel1) return { tel1: "", tel2: "" };
+    const tel1 = candidates[0] || '';
+    if (!tel1) {
+      return { tel1: '', tel2: '' };
+    }
 
     const normalizedTel1 = normalizePhone(tel1);
     const tel2Distinct = candidates.find(
       (tel) => normalizePhone(tel) && normalizePhone(tel) !== normalizedTel1
     );
-
     return { tel1, tel2: tel2Distinct || tel1 };
   }
 
-  function selectEmail(contact) {
-    const emailA = toStringValue(getField(contact, FIELD_KEYS.emailPrimary));
-    const emailB = toStringValue(getField(contact, FIELD_KEYS.emailSecondary));
-    const emailStd = toStringValue(contact.email);
-    return (emailA || emailB || emailStd || "").trim();
-  }
-
   function computeAseguradora(tramoModalidad) {
-    const t = String(tramoModalidad || "").trim();
-    const fonasa = new Set(["Tramo A", "Tramo B", "Tramo C", "Tramo D"]);
-    return fonasa.has(t) ? "Fonasa" : t;
+    const fonasa = new Set(['Tramo A', 'Tramo B', 'Tramo C', 'Tramo D']);
+    return fonasa.has(tramoModalidad) ? 'Fonasa' : tramoModalidad;
   }
 
   async function resolveTramoModalidadName(deal) {
-    const rawValue = getField(deal, FIELD_KEYS.tramoModalidad);
-    if (!rawValue) return "";
+    const rawValue = getCustomField(deal, FIELD_IDS.tramoModalidad);
+    if (!rawValue) {
+      return '';
+    }
 
-    // Si ya viene como texto (ej "Tramo C"), usarlo
-    if (typeof rawValue === "string" && Number.isNaN(Number(rawValue))) {
+    if (typeof rawValue === 'string' && Number.isNaN(Number(rawValue))) {
       return rawValue.trim();
     }
 
@@ -266,27 +240,22 @@
       try {
         const definitionResponse = await client.request({
           url: endpoint,
-          type: "GET",
-          contentType: "application/json",
+          type: 'GET',
+          contentType: 'application/json',
         });
 
         const definition =
           definitionResponse && definitionResponse.data ? definitionResponse.data : definitionResponse;
-
-        const options =
-          (definition && (definition.options || definition.choices || definition.values)) || [];
-
+        const options = definition && (definition.options || definition.choices || definition.values || []);
         if (Array.isArray(options)) {
           const hit = options.find(
             (opt) => String(opt.id) === selectedId || String(opt.value) === selectedId
           );
           if (hit) {
-            return String(hit.name || hit.label || hit.value || "").trim();
+            return String(hit.name || hit.label || hit.value || '').trim();
           }
         }
-      } catch (_e) {
-        // sigue intentando otros endpoints
-      }
+      } catch (_error) {}
     }
 
     return String(rawValue).trim();
@@ -294,29 +263,35 @@
 
   function validateRequired(fields) {
     const missing = [];
-    if (!fields.birth_date) missing.push("Fecha nacimiento");
-    if (!fields.email) missing.push("Email");
-    if (!fields.telefono1) missing.push("Tel1");
-    if (!fields.direccion) missing.push("Dirección");
-    if (!fields.comuna) missing.push("Comuna");
-    if (!fields.tramo_modalidad) missing.push("Tramo/Modalidad");
+    if (!fields.birth_date) missing.push('Fecha nacimiento');
+    if (!fields.email) missing.push('Email');
+    if (!fields.telefono1) missing.push('Tel1');
+    if (!fields.direccion) missing.push('Dirección');
+    if (!fields.comuna) missing.push('Comuna');
+    if (!fields.tramo_modalidad) missing.push('Tramo/Modalidad');
     return missing;
   }
 
-  function requestWithTimeout(options, timeoutMs) {
-    return Promise.race([
-      client.request(options),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout de backend")), Number(timeoutMs || 20000))
-      ),
-    ]);
+  async function postWithTimeout(url, requestOptions, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...requestOptions,
+        signal: controller.signal,
+      });
+
+      const json = await response.json().catch(() => ({}));
+      return { ok: response.ok, statusCode: response.status, body: json };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function onUploadClick() {
-    if (!btnUpload) return;
-
     btnUpload.disabled = true;
-    setStatus("Procesando...");
+    setStatus('Procesando...');
 
     const debug = {
       timestamp: new Date().toISOString(),
@@ -330,43 +305,34 @@
       const settings = await getSettings();
       debug.settings = settings;
 
-      if (!settings.backend_base_url) {
-        throw new Error("Falta setting: backend_base_url.");
+      if (!settings.backend_base_url || !settings.backend_api_key) {
+        throw new Error('Faltan settings: backend_base_url o backend_api_key.');
       }
 
       const deal = await getDealContext();
       const contact = await getContactContext(deal);
 
-      const firstName = toStringValue(contact.first_name);
-      const lastName = toStringValue(contact.last_name);
+      const firstName = String(contact.first_name || '').trim();
+      const lastName = String(contact.last_name || '').trim();
       if (!firstName || !lastName) {
-        debug.block_reason = "Faltan nombre/apellido";
+        debug.block_reason = 'Faltan nombre/apellido';
         setDebug(debug);
-        setStatus("Faltan nombre/apellido");
+        setStatus('Faltan nombre/apellido');
         return;
       }
 
-      const rut = toStringValue(getField(contact, FIELD_KEYS.rut));
+      const rut = String(getCustomField(contact, FIELD_IDS.rut) || '').trim();
       if (!rut) {
-        debug.block_reason = "Sin RUN/RUT: carga manual en Medinet";
+        debug.block_reason = 'Sin RUN/RUT: carga manual en Medinet';
         setDebug(debug);
-        setStatus("Sin RUN/RUT: carga manual en Medinet");
+        setStatus('Sin RUN/RUT: carga manual en Medinet');
         return;
       }
 
-      const birthDate = toStringValue(getField(contact, FIELD_KEYS.birthDate));
+      const birthDate = String(getCustomField(contact, FIELD_IDS.birthDate) || '').trim();
       const email = selectEmail(contact);
-
-      const addrStd = contact.address || {};
-      const direccion =
-        toStringValue(getField(contact, FIELD_KEYS.direccion)) ||
-        toStringValue(addrStd.line1) ||
-        toStringValue(addrStd);
-
-      const comuna =
-        toStringValue(getField(contact, FIELD_KEYS.comuna)) ||
-        toStringValue(addrStd.city);
-
+      const direccion = String(getCustomField(contact, FIELD_IDS.direccion) || '').trim();
+      const comuna = String(getCustomField(contact, FIELD_IDS.comuna) || '').trim();
       const tramoModalidad = await resolveTramoModalidadName(deal);
       const phones = pickTel1Tel2(contact);
 
@@ -379,55 +345,57 @@
         birth_date: birthDate,
         email,
         telefono1: phones.tel1,
-        telefono2: phones.tel2 || phones.tel1,
+        telefono2: phones.tel2,
         direccion,
         comuna,
         tramo_modalidad: tramoModalidad,
         aseguradora: computeAseguradora(tramoModalidad),
-        source: "zendesk_sell_deal_card",
+        source: 'zendesk_sell_deal_card',
       };
 
       debug.payload = payload;
 
       const missing = validateRequired(payload);
       if (missing.length > 0) {
-        const message = `No se puede subir a Medinet. Faltan: ${missing.join(", ")}`;
+        const message = `No se puede subir a Medinet. Faltan: ${missing.join(', ')}`;
         debug.block_reason = message;
         setDebug(debug);
         setStatus(message);
         return;
       }
 
-      // ✅ Recomendado por Zendesk: usar client.request() + secure settings placeholder
-      // backend_api_key (secure) se inyecta server-side por el proxy.
-      // Requiere domainWhitelist + scopes:["header"] en manifest.json.
-      const options = {
-        url: `${settings.backend_base_url}/medinet/import`,
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(payload),
-        headers: {
-          "X-API-Key": "{{setting.backend_api_key}}",
+      const requestResult = await postWithTimeout(
+        `${settings.backend_base_url}/medinet/import`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': settings.backend_api_key,
+          },
+          body: JSON.stringify(payload),
         },
-        accepts: "application/json",
-        secure: true,
-      };
+        settings.backend_timeout_ms
+      );
 
-      const response = await requestWithTimeout(options, settings.backend_timeout_ms);
-      debug.backend_response = response;
-
+      debug.backend_response = requestResult;
       setDebug(debug);
 
-      const responseBody = response || {};
-      if (responseBody.status === "ok") {
-        setStatus(responseBody.message || "Listo ✅");
-        if (responseBody.download_url) window.open(responseBody.download_url, "_blank");
+      const responseBody = requestResult.body || {};
+      if (responseBody.status === 'ok') {
+        setStatus(responseBody.message || 'Listo ✅');
+        if (responseBody.download_url) {
+          window.open(responseBody.download_url, '_blank');
+        }
       } else {
-        setStatus(responseBody.message || "Error");
+        setStatus(responseBody.message || 'Error');
       }
     } catch (error) {
-      const message = (error && error.message) || "Error";
-      debug.backend_error = { name: error && error.name, message };
+      const isAbort = error && error.name === 'AbortError';
+      const message = isAbort ? 'Timeout de backend' : error.message || 'Error';
+      debug.backend_error = {
+        name: error.name,
+        message,
+      };
       setDebug(debug);
       setStatus(message);
     } finally {
