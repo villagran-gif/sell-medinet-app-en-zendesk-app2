@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "Medinet Uploader",
+    "short_description": "Sube datos de Deal y Contact a Medinet"
+  },
+  "parameters": {
+    "backend_base_url": {
+      "label": "Backend base URL",
+      "helpText": "URL base del backend que recibe /medinet/import"
+    },
+    "backend_api_key": {
+      "label": "Backend API key",
+      "helpText": "API key enviada en el header X-API-Key"
+    },
+    "backend_timeout_ms": {
+      "label": "Backend timeout (ms)",
+      "helpText": "Tiempo máximo de espera del POST al backend"
+    }
+  }
+}
