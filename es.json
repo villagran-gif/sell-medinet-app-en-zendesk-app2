@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "Medinet",
+    "short_description": "Send Zendesk Sell deal data to Medinet",
+    "long_description": "This app reads the current Deal and its primary Contact in Zendesk Sell, validates required fields, and sends the payload to a backend endpoint for Medinet import.",
+    "installation_instructions": "Install the app and configure the backend_base_url and backend_api_key parameters. Then open any Deal and click 'Subir a Medinet'.",
+    "parameters": {
+      "backend_base_url": {
+        "label": "Backend Base URL",
+        "helpText": "Example: https://sell-medinet-backend.onrender.com"
+      },
+      "backend_api_key": {
+        "label": "Backend API Key",
+        "helpText": "Must match the API_KEY environment variable configured on Render."
+      },
+      "backend_timeout_ms": {
+        "label": "Backend Timeout (ms)",
+        "helpText": "Optional. Default: 20000"
+      }
+    }
+  }
+}
