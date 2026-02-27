@@ -84,3 +84,8 @@ zip -r sell-medinet-app.zip manifest.json assets
 - `translations/es.json`
 
 Listo para empaquetar e instalar como Private App de Zendesk Sell.
+
+
+## Antropométricos (Peso / Estatura)
+
+La app intenta enviar `peso` y `talla` al backend usando cualquier custom field que contenga valor y cuyo nombre incluya **Peso** o **Talla/Estatura/Altura**, excluyendo los campos que contengan `#` (deprecados). También prueba IDs conocidos: 2567320/2567321, 6037461/6037469, 1291631/1291632.
