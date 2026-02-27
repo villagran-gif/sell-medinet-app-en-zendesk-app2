@@ -13,7 +13,7 @@
     telC: 2577564,
     tramoModalidad: 2758483,
     // Antropométricos (pueden existir duplicados; resolvemos por contenido)
-    peso: 2567320,
+    peso: 6037461,
     talla: 2567321,
     pesoLegacyStr: 6037461,
     tallaLegacyStr: 6037469,
